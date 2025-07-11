@@ -15,9 +15,14 @@ import (
 
 func main() {
 
+	socket.InitSocketServer(&hanlder.GameHandler{})
 	server := socket.GetSocketServer()
 
-	go server.Serve()
+	go func() {
+		if err := server.Serve(); err != nil {
+			log.Fatalf("socketio listen error: %s\n", err)
+		}
+	}()
 	defer server.Close()
 
 	r := gin.Default()
@@ -28,12 +33,7 @@ func main() {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "ngrok-skip-browser-warning"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
 	}))
-
-	socket.InitSocketServer(&hanlder.GameHandler{})
 
 	Handler := hanlder.NewPlayerHandler(service.PlayerService{})
 	Router := router.NewRouter(Handler)
@@ -55,7 +55,7 @@ func main() {
 		Router.PlayerRoute(API)
 	}
 
-	if err := r.Run(":3000"); err != nil {
+	if err := r.Run("192.168.1.10:3000"); err != nil {
 		log.Fatal("failed run app: ", err)
 	}
 }

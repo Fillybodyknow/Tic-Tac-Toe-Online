@@ -1,4 +1,4 @@
-const http = "https://wren-super-cobra.ngrok-free.app";
+const http = "http://101.51.120.113:3000";
 const playerData = localStorage.getItem("player_id");
 const socket = io(http, {
   query: {

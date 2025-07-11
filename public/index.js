@@ -1,4 +1,4 @@
-var http = "https://wren-super-cobra.ngrok-free.app";
+var http = "http://101.51.120.113:3000";
 
 var submitbtn = document.getElementById("submit-button");
 var player_name = document.getElementById("player-name");
