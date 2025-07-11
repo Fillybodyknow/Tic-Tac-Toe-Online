@@ -1,4 +1,4 @@
-const http = "http://localhost:3000";
+const http = "https://wren-super-cobra.ngrok-free.app";
 const playerData = localStorage.getItem("player_id");
 const socket = io(http, {
   query: {

@@ -3,7 +3,7 @@ const turnStatus = document.getElementById("turn-status");
 const player_id = localStorage.getItem("player_id");
 const room_id = localStorage.getItem("room_id");
 
-const http = "http://localhost:3000";
+const http = "https://wren-super-cobra.ngrok-free.app";
 
 let boardElement = null; // ✅ เพิ่มตัวแปร global
 

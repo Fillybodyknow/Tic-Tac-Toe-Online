@@ -1,4 +1,4 @@
-var http = "http://localhost:3000";
+var http = "https://wren-super-cobra.ngrok-free.app";
 
 var submitbtn = document.getElementById("submit-button");
 var player_name = document.getElementById("player-name");
