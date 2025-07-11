@@ -16,7 +16,12 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://wren-super-cobra.ngrok-free.app", "https://tic-tac-toe-online-tau.vercel.app"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "ngrok-skip-browser-warning"},
+		AllowCredentials: true,
+	}))
 
 	socket.InitSocketServer(&hanlder.GameHandler{})
 
