@@ -14,18 +14,26 @@ import (
 )
 
 func main() {
+
+	server := socket.GetSocketServer()
+
+	go server.Serve()
+	defer server.Close()
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://wren-super-cobra.ngrok-free.app", "https://tic-tac-toe-online-tau.vercel.app"},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "ngrok-skip-browser-warning"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
 	}))
 
 	socket.InitSocketServer(&hanlder.GameHandler{})
-
-	server := socket.GetSocketServer()
 
 	Handler := hanlder.NewPlayerHandler(service.PlayerService{})
 	Router := router.NewRouter(Handler)

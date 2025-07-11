@@ -3,7 +3,8 @@ const playerData = localStorage.getItem("player_id");
 const socket = io(http, {
   query: {
     player_id: playerData  // ต้องกำหนดไว้ก่อน
-  }
+  },
+   withCredentials: true,
 });
 
 

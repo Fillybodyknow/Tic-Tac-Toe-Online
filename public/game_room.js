@@ -11,7 +11,8 @@ const socket = io(http + "/game-room", {
   query: {
     player_id,
     room_id
-  }
+  },
+   withCredentials: true,
 });
 
 
