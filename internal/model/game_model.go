@@ -15,8 +15,8 @@ type GameRoom struct {
 	PlayerX       Player         `json:"player_x"`
 	PlayerO       Player         `json:"player_o"`
 	Board         [3][3]string   `json:"board"`
-	Special_PawnX map[string]int `json:"spx"`
-	Special_PawnO map[string]int `json:"spo"`
+	Special_PawnX map[string]int `json:"special_pawn_x"`
+	Special_PawnO map[string]int `json:"special_pawn_o"`
 	Turn          string         `json:"turn"`
 	Winner        string         `json:"winner"`
 	IsDraw        bool           `json:"is_draw"`

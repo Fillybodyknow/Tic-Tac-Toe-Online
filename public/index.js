@@ -1,35 +1,44 @@
-var http = "http://101.51.120.113:3000";
+// Your existing JavaScript code, ensuring IDs match
+        var http = "http://101.51.120.113:3000";
+        var submitbtn = document.getElementById("submit-button");
+        var player_name_input = document.getElementById("player-name-input"); 
 
-var submitbtn = document.getElementById("submit-button");
-var player_name = document.getElementById("player-name");
+        submitbtn.addEventListener("click", (event) => {
+            event.preventDefault();
 
-submitbtn.addEventListener("click", () => {
-    if (player_name.value == "") {
-        alert("Please enter your name");
-        return;
-    }
+            if (player_name_input.value.trim() === "") {
+                alert("Please enter your name to play!");
+                return;
+            }
 
-    fetch(http + "/api/player", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify({
-            username: player_name.value
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            localStorage.setItem("player_id", data.player.player_id);  // ✅ FIX ตรงนี้
-            window.location.href = "lobby.html";
-        }
-    })
-    .catch(err => {
-        console.error("Request failed:", err);
-        alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไปยังเซิร์ฟเวอร์");
-    });
-});
+            fetch(http + "/api/player", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "true"
+                },
+                body: JSON.stringify({
+                    username: player_name_input.value.trim()
+                })
+            })
+            .then(res => {
+                if (res.status === 204) {
+                    return {};
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    localStorage.setItem("player_id", data.player.player_id);
+                    console.log("Player ID:", data.player.player_id);
+                    
+                    window.location.href = "lobby.html";
+                }
+            })
+            .catch(err => {
+                console.error("Request failed:", err);
+                alert("An error occurred while connecting to the server. Please try again.");
+            });
+        });

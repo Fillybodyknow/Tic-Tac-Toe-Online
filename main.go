@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://wren-super-cobra.ngrok-free.app", "https://tic-tac-toe-online-tau.vercel.app"},
+		AllowOrigins:     []string{"http://xoonline.ddns.net:3000"},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "ngrok-skip-browser-warning"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -45,17 +44,29 @@ func main() {
 	}()
 	defer server.Close()
 
-	r.StaticFS("/public", http.Dir("./public"))
-
 	r.GET("/socket.io/*any", gin.WrapH(server))
 	r.POST("/socket.io/*any", gin.WrapH(server))
+
+	r.GET("/", func(c *gin.Context) {
+		c.File("./public/index.html")
+	})
+
+	r.GET("/lobby.html", func(c *gin.Context) {
+		c.File("./public/lobby.html")
+	})
+
+	r.GET("/game_room.html", func(c *gin.Context) {
+		c.File("./public/game_room.html")
+	})
+
+	r.Static("/public", "./public")
 
 	API := r.Group("/api")
 	{
 		Router.PlayerRoute(API)
 	}
 
-	if err := r.Run("192.168.1.10:3000"); err != nil {
+	if err := r.Run("0.0.0.0:3000"); err != nil {
 		log.Fatal("failed run app: ", err)
 	}
 }

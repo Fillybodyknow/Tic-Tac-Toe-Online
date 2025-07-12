@@ -22,12 +22,12 @@ func (H *GameHandler) CreateGameRoom() model.GameRoom {
 	GameRoom := model.GameRoom{
 		RoomID: "",
 		Special_PawnX: map[string]int{
-			"x|medium": 3,
-			"x|large":  2,
+			"X|medium|2": 2,
+			"X|large|3":  1,
 		},
 		Special_PawnO: map[string]int{
-			"o|medium": 3,
-			"o|large":  2,
+			"O|medium|2": 2,
+			"O|large|3":  1,
 		},
 		PlayerX:   model.Player{},
 		PlayerO:   model.Player{},
@@ -91,8 +91,8 @@ func (H *GameHandler) StartGame(RoomID string) bool {
 	return true
 }
 
-func (H *GameHandler) MakeMove(RoomID string, PlayerID string, col int, row int) (*model.GameRoom, error) {
-	updateRoom, err := H.GameLogicService.MakeMove(RoomID, PlayerID, col, row)
+func (H *GameHandler) MakeMove(RoomID string, Special_Pawn string, PlayerID string, col int, row int) (*model.GameRoom, error) {
+	updateRoom, err := H.GameLogicService.MakeMove(RoomID, Special_Pawn, PlayerID, col, row)
 	if err != nil {
 		return nil, err
 	}

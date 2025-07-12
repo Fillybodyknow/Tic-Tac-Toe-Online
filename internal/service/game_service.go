@@ -127,6 +127,14 @@ func (s *GameService) ResetBoard(RoomID string) error {
 	for i := range GameRooms {
 		if GameRooms[i].RoomID == RoomID {
 			GameRooms[i].Board = [3][3]string{{"", "", ""}, {"", "", ""}, {"", "", ""}}
+			GameRooms[i].Special_PawnX = map[string]int{
+				"X|medium|2": 2,
+				"X|large|3":  1,
+			}
+			GameRooms[i].Special_PawnO = map[string]int{
+				"O|medium|2": 2,
+				"O|large|3":  1,
+			}
 			return nil
 		}
 	}

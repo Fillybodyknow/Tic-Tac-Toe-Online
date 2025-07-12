@@ -1,136 +1,244 @@
-const statusRoom = document.getElementById("status-room");
-const turnStatus = document.getElementById("turn-status");
-const player_id = localStorage.getItem("player_id");
-const room_id = localStorage.getItem("room_id");
+const HTTP_SERVER_URL = "http://101.51.120.113:3000";
+const PLAYER_ID = localStorage.getItem("player_id");
+const ROOM_ID = localStorage.getItem("room_id");
 
-const http = "http://101.51.120.113:3000";
+let roomStatusDiv;
+let countdownStatusDiv;
+let turnStatusDiv;
+let gameBoardWrapper;
+let socket;
 
-let boardElement = null; // ✅ เพิ่มตัวแปร global
+let boardElement = null;
+let mySymbol = "";
 
-const socket = io(http + "/game-room", {
-  query: {
-    player_id,
-    room_id
-  },
-   withCredentials: true,
-});
+let selectedSpecialPawn = "";
 
+document.addEventListener('DOMContentLoaded', () => {
+    roomStatusDiv = document.getElementById("room-status");
+    countdownStatusDiv = document.getElementById("countdown-status");
+    turnStatusDiv = document.getElementById("turn-status");
+    gameBoardWrapper = document.getElementById("game-board-wrapper");
+    specialPawnSelect = document.getElementById("special-pawn");
 
-socket.on("join-room-failed", (err) => {
-  statusRoom.innerHTML = `<div class="alert alert-danger">${err}</div>`;
-});
-
-socket.on("game-ready", (msg) => {
-  let countdown = 3;
-
-  const status = document.createElement("h4");
-  status.className = "text-success";
-  status.innerHTML = "All Players Ready!";
-
-  const countdownText = document.createElement("div");
-  countdownText.className = "fs-4 mt-2 text-info fw-bold";
-  countdownText.innerHTML = `Game starts in ${countdown}...`;
-
-  statusRoom.innerHTML = "";
-  statusRoom.appendChild(status);
-  statusRoom.appendChild(countdownText);
-
-  const countdownInterval = setInterval(() => {
-    countdown--;
-    if (countdown >= 0) {
-      countdownText.innerHTML = `Game starts in ${countdown}...`;
+    if (!PLAYER_ID || !ROOM_ID) {
+        alert("Player ID or Room ID is missing. Please go back to the lobby.");
+        window.location.href = "lobby.html";
+        return;
     }
 
-    if (countdown < 0) {
-      clearInterval(countdownInterval);
-      renderGameBoard();
-      socket.emit("request-game-state");
-    }
-  }, 1000);
-});
-
-
-
-socket.on("game-not-ready", (msg) => {
-  statusRoom.innerHTML = `<h4 class="text-warning">${msg}</h4>`;
-});
-
-// ✅ ฟังก์ชันสร้างกระดานเกม 3x3
-function renderGameBoard() {
-  boardElement = document.createElement("div");
-  boardElement.className = "d-grid mx-auto mt-3";
-  boardElement.style.gridTemplateColumns = "repeat(3, 100px)";
-  boardElement.style.gap = "5px";
-  boardElement.style.width = "max-content";
-
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement("button");
-    cell.className = "btn btn-outline-dark";
-    cell.style.width = "100px";
-    cell.style.height = "100px";
-    cell.textContent = "";
-    cell.dataset.index = i;
-
-    // ✅ ผูกการคลิกให้ส่งตำแหน่ง
-    cell.addEventListener("click", () => {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      socket.emit("make-move", { row, col });
+    socket = io(HTTP_SERVER_URL + "/game-room", {
+        query: {
+            player_id: PLAYER_ID,
+            room_id: ROOM_ID
+        },
+        transports: ["websocket", "polling"],
+        reconnection: true,         // ✅ เปิด auto reconnect
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+        withCredentials: true,
     });
 
-    boardElement.appendChild(cell);
-  }
+    socket.on("connect", () => {
+        console.log(`Connected to game room ${ROOM_ID}`);
+        socket.emit("request-game-state");
+    });
 
-  statusRoom.innerHTML = "";
-  statusRoom.appendChild(boardElement);
-}
+    socket.on("join-room-failed", (err) => {
+        roomStatusDiv.innerHTML = `<div class="alert alert-danger">${err}</div>`;
+        setTimeout(() => {
+            window.location.href = "lobby.html";
+        }, 3000);
+    });
 
-  socket.on("update-board", (gameRoom) => {
+    socket.on("game-ready", (msg) => {
+        let countdown = 3;
+
+        roomStatusDiv.innerHTML = `<h4 class="text-success">✅ ${msg}</h4>`;
+        countdownStatusDiv.className = "fs-4 mt-2 text-info fw-bold";
+        countdownStatusDiv.innerHTML = `Game starts in ${countdown}...`;
+
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdown >= 0) {
+                countdownStatusDiv.innerHTML = `Game starts in ${countdown}...`;
+            }
+
+            if (countdown < 0) {
+                clearInterval(countdownInterval);
+                renderGameBoard();
+                socket.emit("request-game-state");
+                countdownStatusDiv.innerHTML = "";
+            }
+        }, 1000);
+    });
+
+    socket.on("game-not-ready", (msg) => {
+        // This line should now be safe as roomStatusDiv is guaranteed to be assigned
+        roomStatusDiv.innerHTML = `<h4 class="text-warning">⏳ ${msg}</h4>`;
+        turnStatusDiv.innerHTML = "";
+    });
+
+    socket.on("update-board", (gameRoom) => {
     if (!boardElement) return;
 
-    MySymbol = gameRoom.player_x.player_id === player_id ? "X" : "O";
-
-    for (let i = 0; i < 9; i++) {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const cell = boardElement.children[i];
-      const symbol = gameRoom.board[row][col];
-      cell.textContent = symbol;
-      cell.disabled = symbol !== "";
-    }
-
-    if (gameRoom.turn === player_id) {
-      turnStatus.innerHTML = `<span class="text-success">👉 It's your turn! | Your Symbol : ${MySymbol}</span>`;
+    specialPawnSelect.innerHTML = "";
+    if (gameRoom.player_x && gameRoom.player_x.player_id === PLAYER_ID) {
+        mySymbol = "X";
+        specialPawnSelect.innerHTML += `<option value="">X Small - ∞</option>`;
+        if (gameRoom.special_pawn_x["X|medium|2"] > 0) {
+            specialPawnSelect.innerHTML += `<option value="X|medium|2">X Medium - ${gameRoom.special_pawn_x["X|medium|2"]}</option>`;
+        }
+        if (gameRoom.special_pawn_x["X|large|3"] > 0) {
+            specialPawnSelect.innerHTML += `<option value="X|large|3">X Large - ${gameRoom.special_pawn_x["X|large|3"]}</option>`;
+        }
+    } else if (gameRoom.player_o && gameRoom.player_o.player_id === PLAYER_ID) {
+        mySymbol = "O";
+        specialPawnSelect.innerHTML += `<option value="">O Small - ∞</option>`;
+        if (gameRoom.special_pawn_o["O|medium|2"] > 0) {
+            specialPawnSelect.innerHTML += `<option value="O|medium|2">O Medium - ${gameRoom.special_pawn_o["O|medium|2"]}</option>`;
+        }
+        if (gameRoom.special_pawn_o["O|large|3"] > 0) {
+            specialPawnSelect.innerHTML += `<option value="O|large|3">O Large - ${gameRoom.special_pawn_o["O|large|3"]}</option>`;
+        }
     } else {
-      turnStatus.innerHTML = `<span class="text-secondary">⏳ Waiting for opponent...</span>`;
+        mySymbol = "";
     }
-  });
 
+    // Update Board
+    for (let i = 0; i < 9; i++) {
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        const cell = boardElement.children[i];
+        const symbol = gameRoom.board[row][col];
 
+        // Reset styles
+        cell.classList.remove('player-x', 'player-o', 'pawn-small', 'pawn-medium', 'pawn-large');
 
-socket.on("make-move-failed", (msg) => {
-  alert(msg);
+        // Extract baseSymbol and apply text
+        let baseSymbol = symbol;
+        if (symbol.includes("|")) {
+            baseSymbol = symbol.split("|")[0];
+        }
+        cell.textContent = baseSymbol;
+
+        // Apply color
+        if (baseSymbol === "X") {
+            cell.classList.add("player-x");
+        } else if (baseSymbol === "O") {
+            cell.classList.add("player-o");
+        }
+
+        // Apply size class
+        if (symbol.includes("|medium|2")) {
+            cell.classList.add("pawn-medium");
+        } else if (symbol.includes("|large|3")) {
+            cell.classList.add("pawn-large");
+        } else if (symbol !== "") {
+            cell.classList.add("pawn-small");
+        }
+
+        const isMyTurn = gameRoom.turn === PLAYER_ID;
+    }
+
+    // Status text
+    if (gameRoom.turn === PLAYER_ID) {
+        turnStatusDiv.innerHTML = `<span class="text-success">👉 It's your turn! Your Symbol: <span class="fw-bold">${mySymbol}</span></span>`;
+    } else {
+        turnStatusDiv.innerHTML = `<span class="text-secondary">⏳ Waiting for opponent's move...</span>`;
+    }
+
+    roomStatusDiv.innerHTML = "";
+    countdownStatusDiv.innerHTML = "";
 });
 
-// ✅ ฟัง event ผู้ชนะ
-socket.on("game-winner", (winnerID) => {
-  alert(`🏆 Player ${winnerID} is the Winner!`);
-  disableBoard();
+
+    socket.on("make-move-failed", (msg) => {
+        alert(`Move failed: ${msg}`);
+        socket.emit("request-game-state");
+    });
+
+    socket.on("game-winner", (winnerData) => {
+        let winnerMessage = "";
+        if (winnerData === PLAYER_ID) {
+            winnerMessage = "🎉 You Won! Congratulations! 🏆";
+            turnStatusDiv.innerHTML = `<span class="text-success fw-bold">${winnerMessage}</span>`;
+        } else if (winnerData === "draw") {
+            winnerMessage = "🤝 It's a Draw! Good Game!";
+            turnStatusDiv.innerHTML = `<span class="text-info fw-bold">${winnerMessage}</span>`;
+        } else if (winnerData === null || winnerData === undefined) {
+            winnerMessage = "Game Ended!";
+            turnStatusDiv.innerHTML = `<span class="text-info fw-bold">${winnerMessage}</span>`;
+        } else {
+            winnerMessage = `😞 Player ${winnerData} is the Winner! Better luck next time.`;
+            turnStatusDiv.innerHTML = `<span class="text-danger fw-bold">${winnerMessage}</span>`;
+        }
+
+        alert(winnerMessage);
+        disableBoard();
+        showGoToLobbyButton();
+    });
+
+    socket.on("game-draw", () => {
+        const message = "🤝 It's a Draw! Good Game!";
+        alert(message);
+        turnStatusDiv.innerHTML = `<span class="text-info fw-bold">${message}</span>`;
+        disableBoard();
+        showGoToLobbyButton();
+    });
+
+    socket.on("player-disconnected", (msg) => {
+        alert(`⚠️ Opponent disconnected: ${msg}. Returning to lobby.`);
+        turnStatusDiv.innerHTML = `<span class="text-warning fw-bold">Opponent Disconnected!</span>`;
+        disableBoard();
+        setTimeout(() => {
+            window.location.href = "lobby.html";
+        }, 3000);
+    });
+
+    function renderGameBoard() {
+        if (!boardElement) {
+            boardElement = document.createElement("div");
+            boardElement.id = "game-board-container";
+            gameBoardWrapper.appendChild(boardElement);
+        } else {
+            boardElement.innerHTML = '';
+        }
+
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement("button");
+            cell.className = "game-cell";
+            cell.dataset.index = i;
+
+            cell.addEventListener("click", () => {
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+
+                const special_pawn = specialPawnSelect?.value || "";
+                socket.emit("make-move", { row, col, special_pawn});
+            });
+
+            boardElement.appendChild(cell);
+        }
+    }
+
+    function disableBoard() {
+        if (!boardElement) return;
+        Array.from(boardElement.children).forEach(cell => {
+            cell.disabled = true;
+        });
+    }
+
+    function showGoToLobbyButton() {
+        let backButton = document.querySelector('.go-back-btn');
+        if (!backButton) {
+            const containerDiv = document.querySelector('.container');
+            backButton = document.createElement('button');
+            backButton.className = 'btn go-back-btn mt-4';
+            backButton.textContent = '⬅️ Back to Lobby';
+            backButton.onclick = () => { window.location.href = 'lobby.html'; };
+            containerDiv.appendChild(backButton);
+        }
+        backButton.style.display = 'block';
+    }
+
 });
-
-// ✅ ฟัง event เสมอ
-socket.on("game-draw", (msg) => {
-  alert("🤝 Draw! " + msg);
-  disableBoard();
-});
-
-// ✅ ปิดการใช้งานกระดานทั้งหมดเมื่อจบเกม
-function disableBoard() {
-  if (!boardElement) return;
-  Array.from(boardElement.children).forEach(cell => {
-    cell.disabled = true;
-  });
-}
-
-
-

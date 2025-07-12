@@ -5,16 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.socket.io/socket.io-1.7.0.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-    <title>Tic Tac Toe</title>
+    <title>Tic Tac Toe Game</title>
+    <style>
+        body {
+            background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%); /* Consistent gradient background */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 500px; /* Max width for the game area */
+            width: 95%; /* Responsive width */
+            background-color: #ffffff; /* White background for the game container */
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 2.5rem;
+            text-align: center;
+        }
+        h1 {
+            color: #007bff; /* Primary blue for title */
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+        }
+        #status-area {
+            min-height: 80px; /* Ensure space for messages */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        #turn-status {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            color: #495057; /* Darker gray for turn status */
+        }
+        /* Game Board Styling */
+        #game-board-container {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 8px; /* Slightly larger gap */
+            width: max-content;
+            margin: 0 auto; /* Center the board */
+            padding: 10px; /* Padding around the board */
+            background-color: #f0f2f5; /* Light background for the board area */
+            border-radius: 10px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.1);
+        }
+        .game-cell {
+  width: 100px;
+  height: 100px;
+  margin: 4px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 100px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  background-color: #f8f9fa;
+}
+        .game-cell:hover:not(:disabled) {
+            background-color: #dee2e6; /* Slightly darker on hover */
+            transform: scale(1.02);
+        }
+        .game-cell:disabled {
+            opacity: 0.8;
+        }
+        .player-x {
+  color: black;
+}
+.player-o {
+  color: black;
+}
+.pawn-small {
+  font-size: 2rem;
+  color: green
+}
+.pawn-medium {
+  font-size: 3rem;
+  color: orange;
+}
+.pawn-large {
+  font-size: 4rem;
+  color: red;
+}
+        .alert {
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+        .go-back-btn {
+            background-color: #6c757d; /* Gray for back button */
+            border-color: #6c757d;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease;
+        }
+        .go-back-btn:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+    </style>
 </head>
 <body>
     <div class="container py-5">
-        <h1 class="mb-4 text-center">🎮 Tic Tac Toe Game Rooms 🎮</h1>
-        <div class="text-center align-middle mb-4">
-            <div id="status-room" class="fw-light"></div>
+        <h1 class="mb-4 text-center">🎮 Game Board 🎮</h1>
+
+        <div id="status-area">
+            <div id="room-status" class="fw-light"></div>
+            <div id="countdown-status" class="fs-4 mt-2 text-info fw-bold"></div>
+        </div>
+
+        <div id="turn-status" class="text-center mt-3 fw-bold fs-5"></div>
+
+        <div id="game-board-wrapper" class="d-flex justify-content-center"></div>
+
+        <div class="text-center mb-3">
+            <label for="special-pawn" class="form-label">Choose Special Pawn:</label>
+                <select id="special-pawn" class="form-select w-auto d-inline-block"></select>
+            <p>
+  <b style="color: red;">Large</b> > 
+  <b style="color: orange;">Medium</b> > 
+  <b style="color: green;">Small</b>
+</p>
+<p>
+  🟩 <b style="color: green;">Small</b> แพ้ <b style="color: orange;">Medium</b>  
+  → <b style="color: red;">Large</b> ชนะทุกตัวที่เล็กกว่า
+</p>
+
+        </div>
+
+
+        <div class="text-center">
+            <button class="btn go-back-btn" onclick="window.location.href='lobby.html'">
+                ⬅️ Back to Lobby
+            </button>
         </div>
     </div>
-    <div id="turn-status" class="text-center mt-3 fw-bold fs-5 text-primary"></div>
-    <script src="game_room.js"></script>
+    <script src="public/game_room.js"></script>
 </body>
 </html>

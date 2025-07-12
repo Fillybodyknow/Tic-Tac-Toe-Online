@@ -13,8 +13,9 @@ var (
 )
 
 type MakeMovePayload struct {
-	Col int `json:"col"`
-	Row int `json:"row"`
+	Col         int    `json:"col"`
+	Row         int    `json:"row"`
+	SpecialPawn string `json:"special_pawn"`
 }
 
 func InitSocketServer(gameHandler *hanlder.GameHandler) {
@@ -47,14 +48,20 @@ func InitSocketServer(gameHandler *hanlder.GameHandler) {
 		server.BroadcastToNamespace("/", "create-room-successfuly", data)
 	})
 
+	server.OnError("/", func(e socketio.Conn, err error) {
+		fmt.Println("Socket.IO error:", err)
+	})
+
 	server.OnConnect(GameRoom, func(Conn socketio.Conn) error {
 		Client := Conn.ID()
 		u := Conn.URL()
 		playerID := u.Query().Get("player_id")
 		roomID := u.Query().Get("room_id")
+		speacialPawn := u.Query().Get("speacial_pawn")
 		Conn.SetContext(map[string]string{
-			"player_id": playerID,
-			"room_id":   roomID,
+			"player_id":     playerID,
+			"room_id":       roomID,
+			"speacial_pawn": speacialPawn,
 		})
 		if playerID == "" || roomID == "" {
 			Conn.Emit("join-room-failed", "Missing player_id or room_id")
@@ -99,7 +106,9 @@ func InitSocketServer(gameHandler *hanlder.GameHandler) {
 		roomID := ctx["room_id"]
 		playerID := ctx["player_id"]
 
-		updateRoom, err := gameHandler.MakeMove(roomID, playerID, payload.Col, payload.Row)
+		fmt.Println("Make Move Payload: ", payload)
+
+		updateRoom, err := gameHandler.MakeMove(roomID, payload.SpecialPawn, playerID, payload.Col, payload.Row)
 		if err != nil {
 			Conn.Emit("make-move-failed", err.Error())
 			return
@@ -107,12 +116,10 @@ func InitSocketServer(gameHandler *hanlder.GameHandler) {
 
 		server.BroadcastToRoom(GameRoom, roomID, "update-board", updateRoom)
 
-		if updateRoom.Winner != "" {
+		switch {
+		case updateRoom.Winner != "":
 			server.BroadcastToRoom(GameRoom, roomID, "game-winner", updateRoom.Winner)
-			return
-		}
-
-		if updateRoom.IsDraw {
+		case updateRoom.IsDraw:
 			server.BroadcastToRoom(GameRoom, roomID, "game-draw", "The game is a draw.")
 		}
 	})
@@ -128,6 +135,10 @@ func InitSocketServer(gameHandler *hanlder.GameHandler) {
 		}
 
 		conn.Emit("update-board", room)
+	})
+
+	server.OnError(GameRoom, func(e socketio.Conn, err error) {
+		fmt.Println("Socket.IO GameRoom error:", err)
 	})
 
 }
