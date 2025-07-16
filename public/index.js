@@ -1,5 +1,5 @@
 // Your existing JavaScript code, ensuring IDs match
-        var http = "https://tic-tac-toe-online-backend-20dy.onrender.com";
+        var HTTP_SERVER_URL = "https://tic-tac-toe-online-backend-20dy.onrender.com";
         var submitbtn = document.getElementById("submit-button");
         var player_name_input = document.getElementById("player-name-input"); 
 
@@ -11,7 +11,7 @@
                 return;
             }
 
-            fetch(http + "/api/player", {
+            fetch(HTTP_SERVER_URL + "/api/player", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
