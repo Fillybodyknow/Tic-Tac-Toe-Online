@@ -1,5 +1,5 @@
 // Your existing JavaScript code, ensuring IDs match
-        var http = "http://101.51.120.113:3000";
+        var http = "https://tic-tac-toe-online-backend-20dy.onrender.com";
         var submitbtn = document.getElementById("submit-button");
         var player_name_input = document.getElementById("player-name-input"); 
 

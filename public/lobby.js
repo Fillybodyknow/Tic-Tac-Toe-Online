@@ -1,6 +1,6 @@
 // public/lobby.js
 
-const HTTP_SERVER_URL = "http://101.51.120.113:3000";
+const HTTP_SERVER_URL = "https://tic-tac-toe-online-backend-20dy.onrender.com";
 const PLAYER_ID = localStorage.getItem("player_id");
 
 // Check if player_id exists, otherwise redirect to home
